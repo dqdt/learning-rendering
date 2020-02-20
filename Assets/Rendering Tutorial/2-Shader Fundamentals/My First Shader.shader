@@ -43,7 +43,7 @@
 //     No filtering: Nearest pixel
 //     Bilinear filtering: Interpolate between nearest pixels
 //     Trilinear filtering: Interpolate between mipmap levels as well
-Shader "Unlit/My First Shader"
+Shader "Custom/My First Shader"
 {
     Properties
     {
