@@ -52,8 +52,8 @@ void ComputeVertexLightColor (inout Interpolators i)
         // // UnityShaderVariables defines an array of vertex light colors
         // i.vertexLightColor = unity_LightColor[0].rgb * attenuation;
 
-        // Compute up to four vertex lights (if there are less, they will be black
-        //   and essentially wasted computation?)
+        // Compute all four vertex lights (if there exist less than four, the
+        //   rest will be black (wasted?))
         i.vertexLightColor = Shade4PointLights(
             unity_4LightPosX0,
             unity_4LightPosY0,
