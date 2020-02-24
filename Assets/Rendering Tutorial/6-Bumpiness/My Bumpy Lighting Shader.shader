@@ -92,7 +92,25 @@
 //       we don't need to renormalize the normal or tangent vectors
 //       therre is some distortion but it's not too much?
 //
+//
+// https://forum.unity.com/threads/what-is-tangent-w-how-to-know-whether-its-1-or-1-tangent-w-vs-unity_worldtransformparams-w.468395/
+// In OpenGL:
+//   u : right
+//   v : up
+//
+// In DirectX:
+//   u : right
+//   v : down
+//
+// So using tangent.w makes the code general for both OpenGL and DirectX.
+// If a mesh scale is negative, might need to invert the corresponding uv axes.
+// If the mesh or texture is mirrored, then the axes also change.
+// => All cases are encoded into tangent.w (?)
 //  
+// unity_WorldTransformParams.w is usually +1. It is -1 when an odd number of
+//   scale components are negative. Because it would interfere with tangent.w.
+//
+// 
 Shader "Custom/My Bumpy Lighting Shader"
 {
     Properties
@@ -100,7 +118,6 @@ Shader "Custom/My Bumpy Lighting Shader"
         _Tint ("Tint", Color) = (1, 1, 1, 1)
 
         _MainTex ("Albedo", 2D) = "white" {} // albedo = what color is diffuse reflection color
-        // [NoScaleOffset] _HeightMap ("Heights", 2D) = "gray" {}
         [NoScaleOffset] _NormalMap ("Normals", 2D) = "bump" {}
         _BumpScale ("Bump Scale", Float) = 1
 
@@ -111,7 +128,6 @@ Shader "Custom/My Bumpy Lighting Shader"
         [NoScaleOffset] _DetailNormalMap ("Detail Normals", 2D) = "bump" {}
         _DetailBumpScale ("Detail Bump Scale", Float) = 1
     }
-
 
     // Include in all CGPROGRAM blocks
     CGINCLUDE
@@ -129,8 +145,6 @@ Shader "Custom/My Bumpy Lighting Shader"
             CGPROGRAM
             #pragma target 3.0
 
-            // Unity looks for a base pass with VERTEXLIGHT_ON keyword.
-            // On the base pass, it will apply vertex lighting.
             #pragma multi_compile _ VERTEXLIGHT_ON
 
             #pragma vertex MyVertexProgram
@@ -151,17 +165,11 @@ Shader "Custom/My Bumpy Lighting Shader"
 
             CGPROGRAM
             #pragma target 3.0
-            // unity will compile multiple variants of this shader, one for each in this list
-            // #pragma multi_compile DIRECTIONAL POINT SPOT
 
-            // This includes all of them:
-            // POINT DIRECTIONAL SPOT POINT_COOKIE DIRECTIONAL_COOKIE
             #pragma multi_compile_fwdadd
 
             #pragma vertex MyVertexProgram
             #pragma fragment MyFragmentProgram
-            
-            // #define POINT
             
             #include "My Bumpy Lighting.cginc"
             ENDCG

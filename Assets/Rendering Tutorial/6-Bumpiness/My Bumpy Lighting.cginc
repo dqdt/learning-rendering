@@ -5,12 +5,10 @@
 #include "AutoLight.cginc"
 
 float4 _Tint;
-sampler2D _MainTex, _DetailTex;
-float4 _MainTex_ST, _DetailTex_ST;
-// sampler2D _HeightMap;
-// float4 _HeightMap_TexelSize;
-sampler2D _NormalMap, _DetailNormalMap;
-float _BumpScale, _DetailBumpScale;
+sampler2D _MainTex,    _DetailTex;
+float4    _MainTex_ST, _DetailTex_ST;
+sampler2D _NormalMap,  _DetailNormalMap;
+float     _BumpScale,  _DetailBumpScale;
 
 float _Metallic;
 float _Smoothness;
@@ -30,11 +28,12 @@ struct Interpolators
     float3 normal : TEXCOORD1;
 
     #if defined(BINORMAL_PER_FRAGMENT)
-        float4 tangent : TEXCOORD2;
+        float4 tangent : TEXCOORD2;   // has tangent.w
     #else
-        float3 tangent : TEXCOORD2;
+        float3 tangent : TEXCOORD2;   // we don't need tangent.w anymore
         float3 binormal : TEXCOORD3;  // compute in vertex shader or fragment shader?
-    #endif                            // but also to save an interpolator slot
+    #endif                            //   we could save an interpolator slot
+    
     float3 worldPos : TEXCOORD4;
 
     #if defined(VERTEXLIGHT_ON) 
@@ -62,6 +61,7 @@ void ComputeVertexLightColor (inout Interpolators i)
     #endif
 }
 
+// binormal vector in tangent-space
 float3 CreateBinormal(float3 normal, float3 tangent, float binormalSign)
 {
     return cross(normal, tangent.xyz) * 
@@ -140,6 +140,7 @@ void InitializeFragmentNormal(inout Interpolators i)
 
     // i.normal = i.normal.xzy;
 
+    // Does whiteout blending
     float3 tangentSpaceNormal = BlendNormals(mainNormal, detailNormal);
 
     // float3 binormal = cross(i.normal, i.tangent.xyz) *
@@ -148,9 +149,14 @@ void InitializeFragmentNormal(inout Interpolators i)
     #if defined(BINORMAL_PER_FRAGMENT)
         float3 binormal = CreateBinormal(i.normal, i.tangent.xyz, i.tangent.w);
     #else
-        float3 binormal = i.binormal;
+        float3 binormal = i.binormal; // was computed in vertex shader,, and interpolated
     #endif
 
+    // The x,y,z axes of the tangent space are:
+    //   x = tangent = right
+    //   y = binormal = forward
+    //   z = normal = up
+    // and we want the tangent-space normal in world space.
     i.normal = normalize(
         tangentSpaceNormal.x * i.tangent +
         tangentSpaceNormal.y * binormal +
